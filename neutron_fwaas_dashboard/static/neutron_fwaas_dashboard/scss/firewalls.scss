@@ -1,4 +1,6 @@
 @import "{{ THEME_DIR }}/{{ THEME }}/variables";
+@import "/dashboard/scss/variables";
+@import "/horizon/lib/bootstrap_scss/scss/bootstrap/mixins";
 @import "/dashboard/scss/components/resource_topology";
 
 .sort-container {
