@@ -104,6 +104,11 @@ def port_list(request, tenant_id, **kwargs):
 # Gets ids of all ports assigned to firewall groups
 @profiler.trace
 def fwg_port_list(request, **kwargs):
+    if getattr(request.user, "is_superuser", False):
+        # Superusers (e.g. the firewall-only SRE) manage every tenant's
+        # firewall groups, so the "already used ports" set must be computed
+        # across all tenants, not just the scoped project.
+        kwargs["all_tenants"] = True
     fwgs = neutronclient(request).list_fwaas_firewall_groups(
         **kwargs).get('firewall_groups')
     ports = set()
@@ -161,6 +166,12 @@ def rule_list_for_tenant(request, tenant_id, **kwargs):
 
 
 def _rule_list(request, **kwargs):
+    if getattr(request.user, "is_superuser", False):
+        # Superusers (e.g. the firewall-only SRE) must see every tenant's
+        # rules. This also covers the internal rule expansion done by
+        # policy_get() / firewall_group_get() when rendering detail/edit
+        # views for a cross-tenant resource.
+        kwargs["all_tenants"] = True
     rules = neutronclient(request).list_fwaas_firewall_rules(
         **kwargs).get('firewall_rules')
     return [Rule(r) for r in rules]
@@ -234,6 +245,11 @@ def policy_list_for_tenant(request, tenant_id, **kwargs):
 
 
 def _policy_list(request, expand_rule, **kwargs):
+    if getattr(request.user, "is_superuser", False):
+        # Superusers (e.g. the firewall-only SRE) must see every tenant's
+        # policies, including when a cross-tenant firewall group's detail
+        # view expands its ingress/egress policy.
+        kwargs["all_tenants"] = True
     policies = neutronclient(request).list_fwaas_firewall_policies(
         **kwargs).get('firewall_policies')
     if expand_rule and policies:
@@ -336,6 +352,10 @@ def firewall_group_list_for_tenant(request, tenant_id, **kwargs):
 
 # TODO(SarathMekala): Support expand_policy for _firewall_group_list
 def _firewall_group_list(request, **kwargs):
+    if getattr(request.user, "is_superuser", False):
+        # Superusers (e.g. the firewall-only SRE) must see every tenant's
+        # firewall groups in all list / detail-expansion paths.
+        kwargs["all_tenants"] = True
     firewall_groups = neutronclient(request).list_fwaas_firewall_groups(
         **kwargs).get('firewall_groups')
     return [FirewallGroup(f) for f in firewall_groups]
