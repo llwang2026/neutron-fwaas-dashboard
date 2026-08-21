@@ -139,6 +139,12 @@ def rule_list_for_tenant(request, tenant_id, **kwargs):
     This is required because Neutron returns all resources including
     all tenants if a user has admin role.
     """
+    if getattr(request.user, "is_superuser", False):
+        # Firewall-only SRE accounts carry the admin role (so they can read
+        # every tenant's resources) but are scoped to a single project in
+        # Keystone. Return ALL tenants' rules instead of just the scoped one.
+        kwargs["all_tenants"] = True
+        return rule_list(request, **kwargs)
     rules = rule_list(request, tenant_id=tenant_id, shared=False, **kwargs)
     shared_rules = rule_list(request, shared=True, **kwargs)
     return rules + shared_rules
@@ -205,6 +211,12 @@ def policy_list_for_tenant(request, tenant_id, **kwargs):
     This is required because Neutron returns all resources including
     all tenants if a user has admin role.
     """
+    if getattr(request.user, "is_superuser", False):
+        # Firewall-only SRE accounts carry the admin role (so they can read
+        # every tenant's resources) but are scoped to a single project in
+        # Keystone. Return ALL tenants' policies instead of just the scoped one.
+        kwargs["all_tenants"] = True
+        return policy_list(request, **kwargs)
     policies = policy_list(request, tenant_id=tenant_id,
                            shared=False, **kwargs)
     shared_policies = policy_list(request, shared=True, **kwargs)
@@ -299,6 +311,13 @@ def firewall_group_list_for_tenant(request, tenant_id, **kwargs):
     groups. This is required because Neutron returns all resources including
     all tenants if a user has admin role.
     """
+    if getattr(request.user, "is_superuser", False):
+        # Firewall-only SRE accounts carry the admin role (so they can read
+        # every tenant's resources) but are scoped to a single project in
+        # Keystone. Return ALL tenants' firewall groups instead of just the
+        # scoped one.
+        kwargs["all_tenants"] = True
+        return firewall_group_list(request, **kwargs)
     fwg = firewall_group_list(request, tenant_id=tenant_id,
                               shared=False, **kwargs)
     shared_fwg = firewall_group_list(request, shared=True, **kwargs)
