@@ -88,7 +88,12 @@ def rule_list(request, **kwargs):
 
 @profiler.trace
 def port_list(request, tenant_id, **kwargs):
-    kwargs['tenant_id'] = tenant_id
+    if getattr(request.user, "is_superuser", False):
+        # Superusers (e.g. the firewall-only SRE) must see every tenant's
+        # ports, not just the ones scoped to their project.
+        kwargs["all_tenants"] = True
+    else:
+        kwargs['tenant_id'] = tenant_id
     ports = neutronclient(request).list_ports(**kwargs).get('ports')
 
     return {
@@ -110,7 +115,12 @@ def fwg_port_list(request, **kwargs):
 
 @profiler.trace
 def fwg_port_list_for_tenant(request, tenant_id, **kwargs):
-    kwargs['tenant_id'] = tenant_id
+    if getattr(request.user, "is_superuser", False):
+        # Superusers (e.g. the firewall-only SRE) must see every tenant's
+        # ports, not just the ones scoped to their project.
+        kwargs["all_tenants"] = True
+    else:
+        kwargs['tenant_id'] = tenant_id
     ports = neutronclient(request).list_ports(**kwargs).get('ports')
     # TODO(SarathMekala): Remove ports which are already associated with a FWG
     fwgs = neutronclient(request).list_fwaas_firewall_groups(
